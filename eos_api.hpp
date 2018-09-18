@@ -19,7 +19,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/types.hpp>      
 #include <eosiolib/transaction.hpp>
@@ -70,11 +69,12 @@ std::string vector_to_hexstring(std::vector<uint8_t> *input) {
 // API
 
 
-//FIXME: can this be removed now?
-//#define oraclize_cbAddress() N(oraclizecb1a) /*TODO: make this dynamic (read from connector's table?)*/
+#ifndef ORACLIZE_PAYER
+  #define ORACLIZE_PAYER _self
+#endif
 
-#define oraclize_query(user, datasource, query, proofType) \
-	oraclize_query__(user, datasource, query, proofType, _self)
+#define oraclize_query(...) oraclize_query__(ORACLIZE_PAYER, __VA_ARGS__, _self)
+
 
 // @abi table
 struct snonce
@@ -140,13 +140,35 @@ checksum256 oraclize_getNextQueryId(account_name sender){
     return calc_hash;
 }
 
-checksum256 oraclize_query__(account_name user, std::string datasource, std::string query, uint8_t prooftype, account_name sender){
+
+checksum256 oraclize_query__(account_name user, unsigned int timestamp, std::string datasource, std::string query, uint8_t prooftype, account_name sender){
     checksum256 queryId = oraclize_getNextQueryId(sender);
     action(
         permission_level{ user, N(active) },
         N(oraclizeconn), N(query),
-        std::make_tuple(sender, (int8_t)1, queryId, datasource, query, prooftype)
+        std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, query, prooftype)
       ).send();
     return queryId;
 }
 
+checksum256 oraclize_query__(account_name user, std::string datasource, std::string query, account_name sender){
+    return oraclize_query__(user, 0, datasource, query, 0, sender);
+}                                  
+
+checksum256 oraclize_query__(account_name user, unsigned int timestamp, std::string datasource, std::string query, account_name sender){    
+    return oraclize_query__(user, timestamp, datasource, query, 0, sender);
+}                                  
+
+checksum256 oraclize_query__(account_name user, std::string datasource, std::string query, uint8_t prooftype, account_name sender){
+    return oraclize_query__(user, 0, datasource, query, prooftype, sender);
+}
+
+
+// CONSTANTS
+
+const uint8_t proofType_NONE = 0x00;
+const uint8_t proofType_TLSNotary = 0x10;
+const uint8_t proofType_Ledger = 0x30;
+const uint8_t proofType_Android = 0x40;
+const uint8_t proofType_Native = 0xF0;
+const uint8_t proofStorage_IPFS = 0x01;

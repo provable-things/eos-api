@@ -22,10 +22,11 @@ THE SOFTWARE.
 #if __cplusplus < 201103
 #warning "To enable all features you must compile with -std=c++11"
 #endif
-#include <iostream>
+
 #include <map>
 #include <stdint.h>
 #include <vector>
+
 #if __cplusplus >= 201103
 #include <initializer_list>
 #endif
@@ -39,7 +40,6 @@ THE SOFTWARE.
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/print.hpp>
-#include <eosiolib/types.hpp>
 #include <eosiolib/transaction.hpp>
 #include <eosiolib/crypto.h>
 
@@ -1121,35 +1121,115 @@ const uint8_t proofStorage_IPFS = 0x01;
 
 #ifndef CONSTANTS 
 #define CONSTANTS
-uint8_t CODE_HASH_RANDOMDS[] = {
+const uint8_t CODE_HASH_RANDOMDS[] = {
 253, 148, 250, 113, 188, 11, 161, 13, 57, 212, 100, 208, 216, 244, 101, 239, 238, 240, 162, 118, 78, 56, 135, 252, 201, 223, 65, 222, 210, 15, 80, 92
 };
-uint8_t LEDGERKEY[] = {
+const uint8_t LEDGERKEY[64] = {
 127, 185, 86, 70, 156, 92, 155, 137, 132, 13, 85, 180, 53, 55, 230, 106, 152, 221, 72, 17, 234, 10, 39, 34, 66, 114, 194, 229, 98, 41, 17, 232, 83, 122, 47, 142, 134, 164, 107, 174, 200, 40, 100, 233, 141, 208, 30, 156, 204, 47, 139, 197, 223, 201, 203, 229, 169, 26, 41, 4, 152, 221, 150, 228
 };
 #endif
 
 
 /**************************************************
- *                      HELPERS                   *
- *                     Functions                  *
+ *                     TABLES                     *
+ *                   Definition                   *
  **************************************************/
-std::string vector_to_string(std::vector<uint8_t> v)
+struct [[eosio::table, eosio::contract("oraclizeconn")]] snonce
+{
+    name sender;
+    uint32_t nonce;
+
+    uint64_t primary_key() const { return sender.value; }
+};
+
+struct [[eosio::table, eosio::contract("oraclizeconn")]] cbaddr
+{
+    name sender;
+
+    uint64_t  primary_key() const { return sender.value; }
+};
+
+struct [[eosio::table]] scommitment
+{
+    name shortqueryid;
+    capi_checksum256 queryid;
+    capi_checksum256 commitment;
+
+    uint64_t primary_key() const { return shortqueryid.value; }
+};
+
+struct [[eosio::table, eosio::contract("oraclizeconn")]] spubkey
+{
+    name key;
+    capi_checksum256 randomDS_lastSessionPubkeyHash;
+
+    uint64_t primary_key() const { return key.value; }
+    capi_checksum256 get_randomDS_lastSessionPubkeyHash() const { return randomDS_lastSessionPubkeyHash; }
+};
+
+struct [[eosio::table]] queryid
+{
+    name key;
+    capi_checksum256 qid;
+    uint8_t active;
+
+    uint64_t primary_key() const { return key.value; }
+};
+
+typedef eosio::multi_index<name("snonce"), snonce> ds_snonce;
+typedef eosio::multi_index<name("cbaddr"), cbaddr> ds_cbaddr;
+typedef eosio::multi_index<name("scommitment"), scommitment> ds_scommitment;
+typedef eosio::multi_index<name("spubkey"), spubkey> ds_spubkey;
+typedef eosio::multi_index<name("queryid"), queryid> ds_queryid;
+
+
+/**************************************************
+ *                      MACRO                     *
+ *                   Definitions                  *
+ **************************************************/
+#ifndef ORACLIZE_PAYER
+#define ORACLIZE_PAYER _self
+#endif // ORACLIZE_PAYER
+
+#define oraclize_query(...) __oraclize_query(ORACLIZE_PAYER, __VA_ARGS__, _self)
+#define oraclize_newRandomDSQuery(...) __oraclize_newRandomDSQuery(ORACLIZE_PAYER, __VA_ARGS__, _self)
+#define oraclize_emplaceQueryId_local(...) __oraclize_emplaceQueryId_local(__VA_ARGS__, _self)
+#define oraclize_getQueryId_local(...) __oraclize_getQueryId_local(__VA_ARGS__, _self)
+
+
+/**************************************************
+ *                PUBLIC FUNCTIONS                *
+ *                 Implementation                 *
+ **************************************************/
+uint64_t oraclize_cbAddress()
+{
+    // go to the connector table which identify the sender 
+    ds_cbaddr cb_addrs("oraclizeconn"_n, "oraclizeconn"_n.value);
+    // point to the first element of the table: 1. if table is empty 
+    auto itr = cb_addrs.begin();
+
+    uint64_t cbaddr = (itr != cb_addrs.end()) ? itr->sender.value : 0;
+    return cbaddr;
+}
+
+std::string vector_to_string(const std::vector<uint8_t> v)
 {
     std::string v_str(v.begin(), v.end());
     return v_str;
 }
 
-std::string checksum256_to_string(checksum256 c)
+std::string capi_checksum256_to_string(const capi_checksum256 c)
 {
     char hexstr[64];
     for (int i = 0; i < 32; i++)
+    {  
         sprintf(hexstr + i * 2, "%02x", c.hash[i]);
+    }
     std::string c_str = std::string(hexstr);
     return c_str;
 }
 
-std::string chara_to_hexstring(uint8_t *input, int size)
+std::string chara_to_hexstring(uint8_t *input, const int size)
 {
     char hexstr[size * 2];
     for (int i = 0; i < size; i++)
@@ -1172,129 +1252,52 @@ std::string vector_to_hexstring(std::vector<uint8_t> *input)
     return c_str;
 }
 
-std::vector<uint8_t> string_to_vector(std::string s)
+std::vector<uint8_t> string_to_vector(const std::string s)
 {
     std::vector<uint8_t> s_v(s.begin(), s.end());
     return s_v;
 }
 
-void unsigned_to_vector(unsigned long num, vector<uint8_t> &ba)
+std::vector<uint8_t> uint32_to_vector8(uint32_t num)
 {
-    unsigned long mask = 0xFF;
-    for (int k = 0; k < 8; k++)
+    std::vector<uint8_t> ba(8);
+    const uint32_t mask = 0xFF;
+    for(int i = 0; i < 8; i++)
     {
-        ba[k] = num & mask;
-        num = num >> 8;
+	ba[i] = num & mask;
+	num = num >> 8;
     }
+    return ba;
 }
 
-void uint8_t_to_vector(uint8_t *num, int size, std::vector<uint8_t> &ba)
+std::vector<uint8_t> uint32_to_vector32_bigendian(uint32_t num)
 {
-    for (int i = 0; i < size; i++)
+    std::vector<uint8_t> ba(32);
+    const uint32_t mask = 0xFF;
+    for(int i = 31; i > -1; i--)
     {
-        ba[i] = num[i];
+	ba[i] = num & mask;
+	num = num >> 8;
     }
+    return ba;
 }
 
-void checksum256_to_vector(checksum256 c, std::vector<uint8_t> &ba)
+std::vector<uint8_t> capi_checksum256_to_vector32(const capi_checksum256 c)
 {
-    for(int i = 0; i < 32; i++)
+    std::vector<uint8_t> ba(32);
+    for (int i = 0; i < 32; i++)
     {
-        ba[i] = c.hash[i];
+	ba[i] = c.hash[i];
     }
-}
-
-void toBigEndian(unsigned long num, vector<uint8_t> &ba) // Convert a little endian into a big endian
-{
-    unsigned int mask = 0xFF;
-    for (int k = 31; k > -1; k--)
-    {
-        ba[k] = num & mask;
-        num = num >> 8;
-    }
+    return ba;
 }
 
 
 /**************************************************
- *                      MACRO                     *
- *                   Definition                   *
- **************************************************/
-#ifndef ORACLIZE_PAYER
-#define ORACLIZE_PAYER _self
-#endif // ORACLIZE_PAYER
-
-#define oraclize_query(...) oraclize_query__(ORACLIZE_PAYER, __VA_ARGS__, _self)
-#define oraclize_newRandomDSQuery(...) oraclize_newRandomDSQuery__(ORACLIZE_PAYER, __VA_ARGS__, _self)
-#define oraclize_emplaceQueryId_local(...) oraclize_emplaceQueryId_local__(__VA_ARGS__, _self)
-#define oraclize_getQueryId_local(...) oraclize_getQueryId_local__(__VA_ARGS__, _self)
-
-
-/**************************************************
- *                     TABLES                     *
- *                   Definition                   *
- **************************************************/
-// @abi table
-struct snonce
-{
-    account_name sender;
-    uint32_t nonce;
-
-    account_name primary_key() const { return sender; }
-};
-
-// @abi table
-struct cbaddr
-{
-    account_name sender;
-
-    account_name primary_key() const { return sender; }
-};
-
-// @abi table
-struct scommitment1
-{
-    uint64_t shortqueryid;
-    checksum256 queryid;
-    checksum256 commitment;
-
-    uint64_t primary_key() const { return shortqueryid; }
-};
-
-// @abi table
-struct spubkey
-{
-    uint64_t key;
-    checksum256 randomDS_lastSessionPubkeyHash;
-
-    uint64_t primary_key() const { return key; }
-    checksum256 get_randomDS_lastSessionPubkeyHash() const 
-    { 
-      return randomDS_lastSessionPubkeyHash; 
-    }
-};
-
-// @abi table
-struct queryid
-{
-    uint64_t key;
-    checksum256 qid;
-    uint8_t active;
-
-    uint64_t primary_key() const { return key; }
-};
-
-typedef eosio::multi_index<N(snonce), snonce> ds_snonce;
-typedef eosio::multi_index<N(cbaddr), cbaddr> ds_cbaddr;
-typedef eosio::multi_index<N(scommitment1), scommitment1> ds_scommitment;
-typedef eosio::multi_index<N(spubkey), spubkey> ds_spubkey;
-typedef eosio::multi_index<N(queryid), queryid> ds_queryid;
-
-
-/**************************************************
- *                   FUNCTIONS                    *
+ *               INTERNAL FUNCTIONS               *
  *                  Definitions                   *
  **************************************************/
-vector<uint8_t> cbor_encode(vector<vector<uint8_t>> params)
+vector<uint8_t> __oraclize_cbor_encode(const vector<vector<uint8_t>> params)
 {
     cbor::array item;
     for (int i = 0; i < params.size(); i++)
@@ -1304,12 +1307,12 @@ vector<uint8_t> cbor_encode(vector<vector<uint8_t>> params)
     return cbor::encode(item);
 }
 
-checksum256 oraclize_randomDS_getSessionPubkeyHash()
+capi_checksum256 __oraclize_randomDS_getSessionPubkeyHash()
 {
-    ds_spubkey spubkeys(N(oraclizeconn), N(oraclizeconn));
-    // just one value in the table with the key=0
-    auto itr = spubkeys.find(0);
-    checksum256 sessionPubkeyHash;
+    ds_spubkey spubkeys("oraclizeconn"_n, "oraclizeconn"_n.value);
+    // just one value in the table with the key=1
+    const auto itr = spubkeys.find(1);
+    capi_checksum256 sessionPubkeyHash;
     if (itr != spubkeys.end())
     {
         sessionPubkeyHash = itr->get_randomDS_lastSessionPubkeyHash();
@@ -1317,22 +1320,10 @@ checksum256 oraclize_randomDS_getSessionPubkeyHash()
     return sessionPubkeyHash;
 }
 
-
-account_name oraclize_cbAddress()
+uint32_t __oraclize_getSenderNonce(name sender)
 {
-    // go to the connector table which identify the sender 
-    ds_cbaddr cb_addrs(N(oraclizeconn), N(oraclizeconn));
-    // point to the first element of the table: 1. if table is empty 
-    auto itr = cb_addrs.begin();
-
-    account_name cbaddr = (itr != cb_addrs.end()) ? itr->sender : 0;
-    return cbaddr;
-}
-
-uint32_t oraclize_getSenderNonce(account_name sender)
-{
-    ds_snonce last_nonces(N(oraclizeconn), N(oraclizeconn));
-    auto itr = last_nonces.find(sender);
+    ds_snonce last_nonces("oraclizeconn"_n, "oraclizeconn"_n.value);
+    const auto itr = last_nonces.find(sender.value);
     uint32_t nonce = 0;
     if (itr != last_nonces.end())
     {
@@ -1341,151 +1332,128 @@ uint32_t oraclize_getSenderNonce(account_name sender)
     return nonce;
 }
 
-checksum256 oraclize_getCommitment(uint64_t shortqueryid)
-{
-    ds_scommitment last_commitments(N(_self), N(_self));
-    auto itr = last_commitments.find(shortqueryid);
-    checksum256 commitment;
-    if (itr != last_commitments.end())
-    {
-        commitment = itr->commitment;
-    }
-    return commitment;
-}
-
-checksum256 oraclize_getQueryId(uint64_t shortqueryid)
-{
-    ds_scommitment last_commitments(N(_self), N(_self));
-    auto itr = last_commitments.find(shortqueryid);
-    checksum256 queryid;
-    if (itr != last_commitments.end())
-    {
-        queryid = itr->queryid;
-    }
-    return queryid;
-}
-
-checksum256 oraclize_getNextQueryId(account_name sender)
+capi_checksum256 __oraclize_getNextQueryId(const name sender)
 {
     // Get values to generate the queryId
-    uint32_t nonce = oraclize_getSenderNonce(sender);
-    size_t tx_size = transaction_size();
+    const uint32_t nonce = __oraclize_getSenderNonce(sender);
+    const size_t tx_size = transaction_size();
     // calculate the hash of the previous values
-    uint8_t tbh[sizeof(sender) + sizeof(nonce) + sizeof(tx_size)]; //account_name[uint64_t] + nonce[uint32_t]
+    uint8_t tbh[sizeof(sender) + sizeof(nonce) + sizeof(tx_size)];
     std::memcpy(tbh, &sender, sizeof(sender));
     std::memcpy(tbh + sizeof(sender), &nonce, sizeof(nonce));
     std::memcpy(tbh + sizeof(sender) + sizeof(nonce), &tx_size, sizeof(tx_size));
-    checksum256 calc_hash;
+    capi_checksum256 calc_hash;
     sha256((char *)tbh, sizeof(tbh), &calc_hash);
     return calc_hash;
 }
 
-checksum256 oraclize_getQueryId_local__(checksum256 queryId, account_name sender)
+capi_checksum256 __oraclize_getQueryId_local(const capi_checksum256 queryId, const name sender)
 {
-  // retreive the short queryId from the passed 
-  uint64_t myQueryId_short;
-  std::memcpy(&myQueryId_short, &queryId.hash, sizeof(myQueryId_short));
+    // retreive the short queryId from the passed 
+    uint64_t myQueryId_short;
+    std::memcpy(&myQueryId_short, &queryId.hash, sizeof(myQueryId_short));
     
-  // access the local table 
-  ds_queryid queryids(sender, sender); 
-  auto itr = queryids.find(myQueryId_short);
-  checksum256 queryId_expected;
-  std::memcpy(&queryId_expected, 0, sizeof(queryId_expected));
-  if (itr != queryids.end())
-  {
-    queryId_expected = itr->qid;  
-  }
-  return queryId_expected;
+    // access the local table 
+    ds_queryid queryids(sender, sender.value); 
+    const auto itr = queryids.find(myQueryId_short);
+    capi_checksum256 queryId_expected;
+    std::memcpy(&queryId_expected, 0, sizeof(queryId_expected));
+    if (itr != queryids.end())
+    {
+	queryId_expected = itr->qid;  
+    }
+    return queryId_expected;
 }
 
-void oraclize_emplaceQueryId_local__(checksum256 myQueryId, account_name sender)
+void __oraclize_emplaceQueryId_local(const capi_checksum256 myQueryId, const name sender)
 {
-  // retreive the short query ID to use as an index
-  ds_queryid queryids(sender, sender);
-  uint64_t myQueryId_short;
-  std::memcpy(&myQueryId_short, &myQueryId.hash, sizeof(myQueryId_short));
-  // save the query id in the local table
-  queryids.emplace(sender, [&]( auto& o ) {
-    o.key = myQueryId_short;
-    o.qid = myQueryId;
-    o.active = true;
-   });
+    // retreive the short query ID to use as an index
+    ds_queryid queryids(sender, sender.value);
+    name myQueryId_short;
+    std::memcpy(&myQueryId_short, &myQueryId.hash, sizeof(myQueryId_short));
+    // save the query id in the local table
+    queryids.emplace(sender, [&]( auto& o ) {
+	o.key = myQueryId_short;
+	o.qid = myQueryId;
+	o.active = true;
+    });
 }
 
 
 /**************************************************
- *                      STRING                    *
  *                  Oraclize Query                *
+ *                    Strings                     *
  **************************************************/
-checksum256 oraclize_query__(account_name user, unsigned int timestamp, std::string datasource, std::string query, uint8_t prooftype, account_name sender)
+capi_checksum256 __oraclize_query(const name user, const unsigned int timestamp, const std::string datasource, const std::string query, const uint8_t prooftype, const name sender)
 {
-    checksum256 queryId = oraclize_getNextQueryId(sender);
-    action(
-        permission_level{user, N(active)},
-        N(oraclizeconn), N(querystr),
-        std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, query, prooftype))
-        .send();
+    capi_checksum256 queryId = __oraclize_getNextQueryId(sender);
+    action(permission_level{user, "active"_n},
+	   "oraclizeconn"_n, 
+	   "querystr"_n,
+	   std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, query, prooftype)
+    ).send();
     return queryId;
 }
 
-checksum256 oraclize_query__(account_name user, std::string datasource, std::string query, account_name sender)
+capi_checksum256 __oraclize_query(const name user, const std::string datasource, const std::string query, const name sender)
 {
-    return oraclize_query__(user, 0, datasource, query, 0, sender);
+    return __oraclize_query(user, 0, datasource, query, 0, sender);
 }
 
-checksum256 oraclize_query__(account_name user, unsigned int timestamp, std::string datasource, std::string query, account_name sender)
+capi_checksum256 __oraclize_query(const name user, const unsigned int timestamp, const std::string datasource, const std::string query, const name sender)
 {
-    return oraclize_query__(user, timestamp, datasource, query, 0, sender);
+    return __oraclize_query(user, timestamp, datasource, query, 0, sender);
 }
 
-checksum256 oraclize_query__(account_name user, std::string datasource, std::string query, uint8_t prooftype, account_name sender)
+capi_checksum256 __oraclize_query(const name user, const std::string datasource, const std::string query, const uint8_t prooftype, const name sender)
 {
-    return oraclize_query__(user, 0, datasource, query, prooftype, sender);
+    return __oraclize_query(user, 0, datasource, query, prooftype, sender);
 }
 
 
 /**************************************************
- *                    BYTEARRAY                   *
  *                 Oraclize Query                 *
+ *                   Bytearrays                   *
  **************************************************/
-checksum256 oraclize_query__(account_name user, unsigned int timestamp, std::string datasource, vector<vector<uint8_t>> query, uint8_t prooftype, account_name sender)
+capi_checksum256 __oraclize_query(const name user, const unsigned int timestamp, const std::string datasource, const vector<vector<uint8_t>> query, const uint8_t prooftype, const name sender)
 {
-    checksum256 queryId = oraclize_getNextQueryId(sender);
-    printhex(cbor_encode(query).data(), cbor_encode(query).size());
-    auto n = name{user};
-    std::string str = n.to_string();
-    action(permission_level{user, N(active)},
-      N(oraclizeconn), N(queryba),
-      std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, cbor_encode(query), prooftype))
-        .send();
+    const capi_checksum256 queryId = __oraclize_getNextQueryId(sender);
+    printhex(__oraclize_cbor_encode(query).data(), __oraclize_cbor_encode(query).size());
+    const auto n = name{user};
+    const std::string str = n.to_string();
+    action(permission_level{user, "active"_n},
+	   "oraclizeconn"_n, 
+	   "queryba"_n,
+	   std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, __oraclize_cbor_encode(query), prooftype)
+    ).send();
     return queryId;
 }
 
-checksum256 oraclize_query__(account_name user, std::string datasource, vector<vector<uint8_t>> query, account_name sender)
+capi_checksum256 __oraclize_query(const name user, const std::string datasource, const vector<vector<uint8_t>> query, const name sender)
 {
-    return oraclize_query__(user, 0, datasource, query, 0, sender);
+    return __oraclize_query(user, 0, datasource, query, 0, sender);
 }
 
-checksum256 oraclize_query__(account_name user, unsigned int timestamp, std::string datasource, vector<vector<uint8_t>> query, account_name sender)
+capi_checksum256 __oraclize_query(const name user, const unsigned int timestamp, const std::string datasource, const vector<vector<uint8_t>> query, const name  sender)
 {
-    return oraclize_query__(user, timestamp, datasource, query, 0, sender);
+    return __oraclize_query(user, timestamp, datasource, query, 0, sender);
 }
 
-checksum256 oraclize_query__(account_name user, std::string datasource, vector<vector<uint8_t>> query, uint8_t prooftype, account_name sender)
+capi_checksum256 __oraclize_query(const name user, const std::string datasource, const vector<vector<uint8_t>> query, const uint8_t prooftype, const name sender)
 {
-    return oraclize_query__(user, 0, datasource, query, prooftype, sender);
+    return __oraclize_query(user, 0, datasource, query, prooftype, sender);
 }
 
 
 /**************************************************
- *                    RANDOM DS                   *
  *                 Oraclize Query                 *
+ *                   Random DS                    *
  **************************************************/
-void oraclize_randomDS_setCommitment(checksum256 queryId, checksum256 commitment, account_name payer)
+void __oraclize_randomDS_setCommitment(const capi_checksum256 queryId, const capi_checksum256 commitment, const name payer)
 {
-    uint64_t myQueryId_short; // Calculate the short queryId, to use it as a key of the table
+    name myQueryId_short; // Calculate the short queryId, to use it as a key of the table
     std::memcpy(&myQueryId_short, &queryId.hash[0], sizeof(myQueryId_short));
-    ds_scommitment last_commitments(payer, payer); // Set the commitment in the eos table of the caller
+    ds_scommitment last_commitments(payer, payer.value); // Set the commitment in the eos table of the caller
     last_commitments.emplace(payer, [&](auto &o) { //key must be a uint64_t so a short query Id is used
         o.shortqueryid = myQueryId_short;
         o.queryid = queryId;
@@ -1493,49 +1461,46 @@ void oraclize_randomDS_setCommitment(checksum256 queryId, checksum256 commitment
     });
 }
 
-checksum256 oraclize_newRandomDSQuery__(account_name user, unsigned long _delay, uint8_t _nbytes, account_name sender)
+capi_checksum256 __oraclize_newRandomDSQuery(const name user, const uint32_t _delay, const uint8_t _nbytes, const name sender)
 {
     // 1. NBYTES - Convert nbytes to bytearray
-    std::vector<uint8_t> nbytesBa(1, 0);
+    std::vector<uint8_t> nbytesBa(1);
     nbytesBa[0] = _nbytes;
 
     // 2. SESSIONKEYHASH - Get the sessionKeyHash from the ledger public key.
-    checksum256 sessionPubkeyHash = oraclize_randomDS_getSessionPubkeyHash();
+    const capi_checksum256 sessionPubkeyHash = __oraclize_randomDS_getSessionPubkeyHash();
     std::vector<uint8_t> sessionPubkeyHashBa(32);
-    checksum256_to_vector(sessionPubkeyHash, sessionPubkeyHashBa);
+    sessionPubkeyHashBa = capi_checksum256_to_vector32(sessionPubkeyHash);
 
     // 3. UNONCE - Need something block dependent so we decided to perform the hash of those 4 block dependent fields. This value have to be unpredictable from Oraclize
-    size_t tx_size = transaction_size();
-    int tapos_block_num_ = tapos_block_num();
-    int tapos_block_prefix_ = tapos_block_prefix();
+    const size_t tx_size = transaction_size();
+    const int tapos_block_num_ = tapos_block_num();
+    const int tapos_block_prefix_ = tapos_block_prefix();
     uint8_t unonce[sizeof(tx_size) + sizeof(tapos_block_num_) + sizeof(tapos_block_prefix_)]; // Fill the unonce array: now() + transaction_size + tapos_block_num + tapos_block_prefix
     std::memcpy(unonce, &tx_size, sizeof(tx_size));
     std::memcpy(unonce + sizeof(tx_size), &tapos_block_num_, sizeof(tapos_block_num_));
     std::memcpy(unonce + sizeof(tx_size) + sizeof(tapos_block_num_), &tapos_block_prefix_, sizeof(tapos_block_prefix_));
-    checksum256 unonceHash; // Container for the unonce hash
+    capi_checksum256 unonceHash; // Container for the unonce hash
     sha256((char *)unonce, sizeof(unonce), &unonceHash);
     std::vector<uint8_t> unonceHashBa(32); // Convert the unonce hash in bytearray
-    checksum256_to_vector(unonceHash, unonceHashBa);
+    unonceHashBa = capi_checksum256_to_vector32(unonceHash);
 
     // 4. DELAY - Delay converted in a big endian bytearray
-    _delay *= 10; // Convert from seconds to ledger timer ticks
-    std::vector<uint8_t> delayBaBigEndian(32, 0);
-    toBigEndian(_delay, delayBaBigEndian); // Perform the convertion
-
+    const uint32_t delayLedgerTime = _delay * 10; // Convert from seconds to ledger timer ticks
+    std::vector<uint8_t> delayBaBigEndian(32);
+    delayBaBigEndian = uint32_to_vector32_bigendian(delayLedgerTime);
     // Set args to be passed as params of the oraclize "random" query
     vector<vector<uint8_t>> args;
     args.push_back(unonceHashBa);
     args.push_back(nbytesBa);
     args.push_back(sessionPubkeyHashBa);
     args.push_back(delayBaBigEndian);
-
     // Call the oraclize_query and get the queryId
-    checksum256 queryId = oraclize_query__(user,"random", args, proofType_Ledger, sender); // proofType and datasource are always fixed in this function
-
+    const capi_checksum256 queryId = __oraclize_query(user,"random", args, proofType_Ledger, sender); // proofType and datasource are always fixed in this function
     // Calculate the commitment and call a function to set it    
-    std::vector<uint8_t> delayBa(8, 0); // delay should be passed as 8 byte
-    unsigned_to_vector(_delay, delayBa); // 8 byte long
-    checksum256 unonceHashBaHash; // unonce has to be passed hashed
+    std::vector<uint8_t> delayBa(8); // delay converted to  8 byte
+    delayBa = uint32_to_vector8(delayLedgerTime);
+    capi_checksum256 unonceHashBaHash; // unonce has to be passed hashed
     uint8_t* charArray = &unonceHashBa[0];
     sha256((char *) charArray, unonceHashBa.size(), &unonceHashBaHash);
     uint8_t commitmentTbh[8 + 1 + 32 + args[2].size()]; // Calculate the commitment to be hashed with the size of: 8 + 1 + 32 + 32
@@ -1543,15 +1508,15 @@ checksum256 oraclize_newRandomDSQuery__(account_name user, unsigned long _delay,
     std::memcpy(commitmentTbh + 8, &args[1][0], 1); // 8 + 1 
     std::memcpy(commitmentTbh + 8 + 1, &unonceHashBaHash, 32); // 8 + 1 + 32 == commitmentSlice1
     std::memcpy(commitmentTbh + delayBa.size() + args[1].size() + sizeof(unonceHashBaHash), &args[2][0], args[2].size()); // 8 + 1 + 32 + 32 (commitmentSlice1 + sessionPubkeyHashBa)
-    checksum256 commitment; // Container for the commitment hash
+    capi_checksum256 commitment; // Container for the commitment hash
     sha256((char *)commitmentTbh, sizeof(commitmentTbh), &commitment);
-    account_name payer = user; // Payer for setting the commitment
-    oraclize_randomDS_setCommitment(queryId, commitment, payer); // Call the function to set query Id and commitment in the table
+    const name payer = user; // Payer for setting the commitment
+    __oraclize_randomDS_setCommitment(queryId, commitment, payer); // Call the function to set query Id and commitment in the table
     
     return queryId;
 }
 
-void get_signature_component(uint8_t component[32], uint8_t signature[], uint8_t signature_len, uint8_t length_idx)
+void __oraclize_randomDS_get_signature_component(uint8_t component[32], const uint8_t signature[], const uint8_t signature_len, const uint8_t length_idx)
 {
     eosio_assert(signature_len > length_idx, "Invalid index");
     uint8_t component_len = signature[length_idx];
@@ -1559,7 +1524,7 @@ void get_signature_component(uint8_t component[32], uint8_t signature[], uint8_t
     std::memcpy(component, &signature[length_idx + 1 + byte_to_jump], component_len - byte_to_jump);
 }
 
-bool matchBytes32Prefix(checksum256 content, uint8_t prefix[], uint8_t prefix_len, uint8_t n_random_bytes)
+bool __oraclize_randomDS_matchBytes32Prefix(const capi_checksum256 content, const uint8_t prefix[], const uint8_t prefix_len, const uint8_t n_random_bytes)
 {
     eosio_assert(prefix_len == n_random_bytes, "Prefix length and random bytes number should match.");
     for (int i = 0; i < n_random_bytes; ++i)
@@ -1568,7 +1533,7 @@ bool matchBytes32Prefix(checksum256 content, uint8_t prefix[], uint8_t prefix_le
     return true;
 }
 
-bool test_pubkey_signature(uint8_t whatever, uint8_t v, uint8_t r[32], uint8_t s[32], checksum256 digest, uint8_t pubkey[64])
+bool __oraclize_randomDS_test_pubkey_signature(const uint8_t whatever, const uint8_t v, const uint8_t r[32], const uint8_t s[32], const capi_checksum256 digest, const uint8_t pubkey[64])
 {
     uint8_t signature[66];
     signature[0] = whatever; // 0;
@@ -1576,7 +1541,7 @@ bool test_pubkey_signature(uint8_t whatever, uint8_t v, uint8_t r[32], uint8_t s
     std::memcpy(signature + 2, r, 32);
     std::memcpy(signature + 2 + 32, s, 32);
     uint8_t compressed[34];
-    int compressed_size = recover_key(&digest, (char *)signature, sizeof(signature), (char *)compressed, sizeof(compressed));
+    const int compressed_size = recover_key(&digest, (char *)signature, sizeof(signature), (char *)compressed, sizeof(compressed));
     if (compressed_size != 34)
       return false;
     if (compressed[1] != 0x02 && compressed[1] != 0x03)
@@ -1586,24 +1551,21 @@ bool test_pubkey_signature(uint8_t whatever, uint8_t v, uint8_t r[32], uint8_t s
     // Note: eosio doesn't provide a way to decompress the key obtained by recover_key
     // So here we compress the given pub key (by extracting the relevant x coord)
     // and then check if it's equal to the one returned by the function
-    // check this lightweight library to decompress publickeys:
-    // https://github.com/kmackay/micro-ecc
-    // further doc at https://bitcoin.org/en/developer-guide#public-key-formats
 }
 
-bool verifySig(checksum256 digest, uint8_t der_signature[], uint8_t der_signature_len, uint8_t pubkey[], uint8_t pubkey_len)
+bool __oraclize_randomDS_verifySig(const capi_checksum256 digest, const uint8_t der_signature[], const uint8_t der_signature_len, const uint8_t pubkey[64])
 {
-  uint8_t r[32];
-  uint8_t s[32];
-  get_signature_component(r, der_signature, der_signature_len, 3);
-  get_signature_component(s, der_signature, der_signature_len, 4 + der_signature[3] + 1);
-  // we try either with v=27 or with v=28
-  bool test_v27 = test_pubkey_signature(0, 27, r, s, digest, pubkey);
-  bool test_v28 = test_pubkey_signature(0, 28, r, s, digest, pubkey);
-  return test_v27 || test_v28;
+    uint8_t r[32];
+    uint8_t s[32];
+    __oraclize_randomDS_get_signature_component(r, der_signature, der_signature_len, 3);
+    __oraclize_randomDS_get_signature_component(s, der_signature, der_signature_len, 4 + der_signature[3] + 1);
+    // We try either with v=27 or with v=28
+    bool test_v27 = __oraclize_randomDS_test_pubkey_signature(0, 27, r, s, digest, pubkey);
+    bool test_v28 = __oraclize_randomDS_test_pubkey_signature(0, 28, r, s, digest, pubkey);
+    return test_v27 || test_v28;
 }
 
-uint8_t oraclize_randomDS_proofVerify(checksum256 queryId, std::vector<uint8_t> result, std::vector<uint8_t> proof, account_name payer)
+uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std::vector<uint8_t> result, const std::vector<uint8_t> proof, const name payer)
 {
     /*******************************************************************************************
      *											       *
@@ -1619,16 +1581,17 @@ uint8_t oraclize_randomDS_proofVerify(checksum256 queryId, std::vector<uint8_t> 
      *   Step 2: the unique keyhash has to match with the sha256 of (context name = queryId)    *
      *												*
      ********************************************************************************************/
-    uint8_t ledgerProofLength = 3 + 65 + (proof[3 + 65 + 1] + 2) + 32;
+    const uint8_t ledgerProofLength = 3 + 65 + (proof[3 + 65 + 1] + 2) + 32;
     uint8_t keyhash[32];
     std::memcpy(keyhash, &proof.data()[ledgerProofLength], 32);
-    char context_name[] = {'e','o','s','_','t','e','s','t','n','e','t','_','j','u','n','g','l','e'};
-    checksum256 calc_hash;
+    const char context_name[] = {'e','o','s','_','t','e','s','t','n','e','t','_','j','u','n','g','l','e'};
+    capi_checksum256 calc_hash;
     uint8_t tbh2[sizeof(context_name) + sizeof(queryId.hash)];
     std::memcpy(tbh2, &context_name, sizeof(context_name));
     std::memcpy(tbh2 + sizeof(context_name), &queryId.hash, sizeof(queryId.hash));
     sha256((char *)tbh2, sizeof(tbh2), &calc_hash);
     std::memcmp(calc_hash.hash, keyhash, sizeof(keyhash));
+
 
     /********************************************************************************************
      *												*
@@ -1636,12 +1599,12 @@ uint8_t oraclize_randomDS_proofVerify(checksum256 queryId, std::vector<uint8_t> 
      *		 and we verify if 'result' is the prefix of sha256(sig1)                         *
      *												*
      ********************************************************************************************/
-    uint8_t sig1_len = proof[ledgerProofLength + (32 + 8 + 1 + 32) + 1] + 2;
+    const uint8_t sig1_len = proof[ledgerProofLength + (32 + 8 + 1 + 32) + 1] + 2;
     uint8_t sig1[sig1_len];
     std::memcpy(sig1, &proof.data()[ledgerProofLength + (32 + 8 + 1 + 32)], sig1_len);
-    checksum256 sig1_hash;
+    capi_checksum256 sig1_hash;
     sha256((char *)sig1, sizeof(sig1), &sig1_hash);
-    if (!matchBytes32Prefix(sig1_hash, result.data(), result.size(), proof[ledgerProofLength + 32 + 8]))
+    if (!__oraclize_randomDS_matchBytes32Prefix(sig1_hash, result.data(), result.size(), proof[ledgerProofLength + 32 + 8]))
       return 3;
 
    
@@ -1651,48 +1614,42 @@ uint8_t oraclize_randomDS_proofVerify(checksum256 queryId, std::vector<uint8_t> 
      *		 sha256(delay, nbytes, unonce, sessionKeyHash) == commitment in table.          *
      *												*
      ********************************************************************************************/
-    uint8_t slice_offset = 8 + 1 + 32; // delay + nbytes + unonceHashBa
+    const uint8_t slice_offset = 8 + 1 + 32; // delay + nbytes + unonceHashBa
     uint8_t commitmentSlice1[slice_offset];
     std::memcpy(commitmentSlice1, &proof.data()[ledgerProofLength + 32], sizeof(commitmentSlice1));
     // Extract the session public key and calculate the session publick key hash
     uint8_t sessionPubKey[64];
-    uint16_t sig2offset = ledgerProofLength + 32 + (8 + 1 + 32) + sig1_len + 65; // ledgerProofLength+32+(8+1+32)+sig1.len+65
+    const uint16_t sig2offset = ledgerProofLength + 32 + (8 + 1 + 32) + sig1_len + 65; // ledgerProofLength+32+(8+1+32)+sig1.len+65
     std::memcpy(sessionPubKey, &proof.data()[sig2offset - 64], sizeof(sessionPubKey));
-    checksum256 sessionPubkeyHash; // Calculate the key hash
+    capi_checksum256 sessionPubkeyHash; // Calculate the key hash
     sha256((char *)sessionPubKey, sizeof(sessionPubKey), &sessionPubkeyHash);
-    vector<uint8_t> sessionPubkeyHashBa(32); // Convert to bytearray the public key hash
-    checksum256_to_vector(sessionPubkeyHash, sessionPubkeyHashBa);
+    vector<uint8_t> sessionPubkeyHashBa(32); // Convert to bytearray the public key hash 
+    sessionPubkeyHashBa = capi_checksum256_to_vector32(sessionPubkeyHash);
     // Recreate the lastCommitment to compare with the table one
-    checksum256 lastCommitment;
+    capi_checksum256 lastCommitment;
     uint8_t tbh[ slice_offset + 32];
     std::memcpy(tbh, &commitmentSlice1, slice_offset);
     std::memcpy(tbh + slice_offset, &sessionPubkeyHashBa[0], 32);
     sha256((char *)tbh, sizeof(tbh), &lastCommitment);
     // Retrieve the table commitment
-    ds_scommitment last_commitments(payer, payer);
+    ds_scommitment last_commitments(payer, payer.value);
     uint64_t myQueryId_short;
     std::memcpy(&myQueryId_short, &queryId.hash[0], sizeof(myQueryId_short));
     // Check the query id with the one in the table
-    auto itr = last_commitments.find(myQueryId_short);
-    checksum256 queryId_expected;
+    const auto itr = last_commitments.find(myQueryId_short);
+    capi_checksum256 queryId_expected;
     if (itr == last_commitments.end())
-    {
         queryId_expected = itr->queryid;
-    } 
-    std::string queryId_str__expected = checksum256_to_string(last_commitments.find(myQueryId_short)->queryid);
-    std::string queryId_str = checksum256_to_string(queryId);
+    const std::string queryId_str__expected = capi_checksum256_to_string(last_commitments.find(myQueryId_short)->queryid);
+    const std::string queryId_str = capi_checksum256_to_string(queryId);
     if (queryId_str != queryId_str__expected)
-    {
       return 4;
-    }
     // Check the commitment with the one in the table
-    std::string lastCommitment_str__expected = checksum256_to_string(last_commitments.find(myQueryId_short)->commitment);
-    std::string lastCommitment_str = checksum256_to_string(lastCommitment);
+    const std::string lastCommitment_str__expected = capi_checksum256_to_string(last_commitments.find(myQueryId_short)->commitment);
+    const std::string lastCommitment_str = capi_checksum256_to_string(lastCommitment);
     if (lastCommitment_str != lastCommitment_str__expected)
-    {
       return 4;
-    }
-   
+
 
     /********************************************************************************************
      *												*
@@ -1701,9 +1658,9 @@ uint8_t oraclize_randomDS_proofVerify(checksum256 queryId, std::vector<uint8_t> 
      ********************************************************************************************/
     uint8_t toSign1[32 + 8 + 1 + 32];
     std::memcpy(toSign1, &proof.data()[ledgerProofLength], sizeof(toSign1));
-    checksum256 toSign1_hash;
+    capi_checksum256 toSign1_hash;
     sha256((char *)toSign1, sizeof(toSign1), &toSign1_hash);
-    if (!verifySig(toSign1_hash, sig1, sizeof(sig1), sessionPubKey, sizeof(sessionPubKey)))
+    if (!__oraclize_randomDS_verifySig(toSign1_hash, sig1, sizeof(sig1), sessionPubKey))
       return 5;
 
 
@@ -1721,9 +1678,9 @@ uint8_t oraclize_randomDS_proofVerify(checksum256 queryId, std::vector<uint8_t> 
     toSign2[0] = 1; // role
     std::memcpy(toSign2 + 1, &proof.data()[sig2offset - 65], 65);
     std::memcpy(toSign2 + 65 + 1, CODE_HASH_RANDOMDS, 32);
-    checksum256 toSign2_hash;
+    capi_checksum256 toSign2_hash;
     sha256((char *)toSign2, sizeof(toSign2), &toSign2_hash);
-    if (!verifySig(toSign2_hash, sig2, sizeof(sig2), appkey_pubkey, sizeof(appkey_pubkey)))
+    if (!__oraclize_randomDS_verifySig(toSign2_hash, sig2, sizeof(sig2), appkey_pubkey))
       return 6;
 
 
@@ -1737,14 +1694,14 @@ uint8_t oraclize_randomDS_proofVerify(checksum256 queryId, std::vector<uint8_t> 
     std::memcpy(toSign3 + 1, &proof.data()[3], 65);
     uint8_t sig3[proof[3 + 65 + 1] + 2];
     std::memcpy(sig3, &proof.data()[3 + 65], sizeof(sig3));
-    checksum256 toSign3_hash;
+    capi_checksum256 toSign3_hash;
     sha256((char *)toSign3, sizeof(toSign3), &toSign3_hash);
-    if (!verifySig(toSign3_hash, sig3, sizeof(sig3), LEDGERKEY, sizeof(LEDGERKEY)))
+    if (!__oraclize_randomDS_verifySig(toSign3_hash, sig3, sizeof(sig3), LEDGERKEY))
       return 7;
    
-
+    
     // Erase the last commitment
-    auto itr2 = last_commitments.find(myQueryId_short);
+    const auto itr2 = last_commitments.find(myQueryId_short);
     last_commitments.erase(itr2);
     return 0;
 }

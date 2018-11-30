@@ -1122,10 +1122,10 @@ const uint8_t proofStorage_IPFS = 0x01;
 #ifndef CONSTANTS 
 #define CONSTANTS
 const uint8_t CODE_HASH_RANDOMDS[] = {
-253, 148, 250, 113, 188, 11, 161, 13, 57, 212, 100, 208, 216, 244, 101, 239, 238, 240, 162, 118, 78, 56, 135, 252, 201, 223, 65, 222, 210, 15, 80, 92
+    253, 148, 250, 113, 188, 11, 161, 13, 57, 212, 100, 208, 216, 244, 101, 239, 238, 240, 162, 118, 78, 56, 135, 252, 201, 223, 65, 222, 210, 15, 80, 92
 };
 const uint8_t LEDGERKEY[64] = {
-127, 185, 86, 70, 156, 92, 155, 137, 132, 13, 85, 180, 53, 55, 230, 106, 152, 221, 72, 17, 234, 10, 39, 34, 66, 114, 194, 229, 98, 41, 17, 232, 83, 122, 47, 142, 134, 164, 107, 174, 200, 40, 100, 233, 141, 208, 30, 156, 204, 47, 139, 197, 223, 201, 203, 229, 169, 26, 41, 4, 152, 221, 150, 228
+    127, 185, 86, 70, 156, 92, 155, 137, 132, 13, 85, 180, 53, 55, 230, 106, 152, 221, 72, 17, 234, 10, 39, 34, 66, 114, 194, 229, 98, 41, 17, 232, 83, 122, 47, 142, 134, 164, 107, 174, 200, 40, 100, 233, 141, 208, 30, 156, 204, 47, 139, 197, 223, 201, 203, 229, 169, 26, 41, 4, 152, 221, 150, 228
 };
 #endif
 
@@ -1264,8 +1264,8 @@ std::vector<uint8_t> uint32_to_vector8(uint32_t num)
     const uint32_t mask = 0xFF;
     for(int i = 0; i < 8; i++)
     {
-	ba[i] = num & mask;
-	num = num >> 8;
+	    ba[i] = num & mask;
+	    num = num >> 8;
     }
     return ba;
 }
@@ -1276,8 +1276,8 @@ std::vector<uint8_t> uint32_to_vector32_bigendian(uint32_t num)
     const uint32_t mask = 0xFF;
     for(int i = 31; i > -1; i--)
     {
-	ba[i] = num & mask;
-	num = num >> 8;
+	    ba[i] = num & mask;
+	    num = num >> 8;
     }
     return ba;
 }
@@ -1287,7 +1287,7 @@ std::vector<uint8_t> capi_checksum256_to_vector32(const capi_checksum256 c)
     std::vector<uint8_t> ba(32);
     for (int i = 0; i < 32; i++)
     {
-	ba[i] = c.hash[i];
+	    ba[i] = c.hash[i];
     }
     return ba;
 }
@@ -1360,7 +1360,7 @@ capi_checksum256 __oraclize_getQueryId_local(const capi_checksum256 queryId, con
     std::memcpy(&queryId_expected, 0, sizeof(queryId_expected));
     if (itr != queryids.end())
     {
-	queryId_expected = itr->qid;  
+	    queryId_expected = itr->qid;
     }
     return queryId_expected;
 }
@@ -1373,9 +1373,9 @@ void __oraclize_emplaceQueryId_local(const capi_checksum256 myQueryId, const nam
     std::memcpy(&myQueryId_short, &myQueryId.hash, sizeof(myQueryId_short));
     // save the query id in the local table
     queryids.emplace(sender, [&]( auto& o ) {
-	o.key = myQueryId_short;
-	o.qid = myQueryId;
-	o.active = true;
+	    o.key = myQueryId_short;
+	    o.qid = myQueryId;
+	    o.active = true;
     });
 }
 
@@ -1388,9 +1388,9 @@ capi_checksum256 __oraclize_query(const name user, const unsigned int timestamp,
 {
     capi_checksum256 queryId = __oraclize_getNextQueryId(sender);
     action(permission_level{user, "active"_n},
-	   "oraclizeconn"_n, 
-	   "querystr"_n,
-	   std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, query, prooftype)
+	       "oraclizeconn"_n, 
+	       "querystr"_n,
+	       std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, query, prooftype)
     ).send();
     return queryId;
 }
@@ -1422,9 +1422,9 @@ capi_checksum256 __oraclize_query(const name user, const unsigned int timestamp,
     const auto n = name{user};
     const std::string str = n.to_string();
     action(permission_level{user, "active"_n},
-	   "oraclizeconn"_n, 
-	   "queryba"_n,
-	   std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, __oraclize_cbor_encode(query), prooftype)
+	       "oraclizeconn"_n, 
+	       "queryba"_n,
+	       std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, __oraclize_cbor_encode(query), prooftype)
     ).send();
     return queryId;
 }
@@ -1528,8 +1528,8 @@ bool __oraclize_randomDS_matchBytes32Prefix(const capi_checksum256 content, cons
 {
     eosio_assert(prefix_len == n_random_bytes, "Prefix length and random bytes number should match.");
     for (int i = 0; i < n_random_bytes; ++i)
-      if (content.hash[i] != prefix[i])
-        return false;
+        if (content.hash[i] != prefix[i])
+            return false;
     return true;
 }
 
@@ -1543,9 +1543,9 @@ bool __oraclize_randomDS_test_pubkey_signature(const uint8_t whatever, const uin
     uint8_t compressed[34];
     const int compressed_size = recover_key(&digest, (char *)signature, sizeof(signature), (char *)compressed, sizeof(compressed));
     if (compressed_size != 34)
-      return false;
+        return false;
     if (compressed[1] != 0x02 && compressed[1] != 0x03)
-      return false;
+        return false;
     // Discard the first (0x00) and the second byte (0x02 or 0x03)
     return std::memcmp(compressed + 2, pubkey, 32) == 0;
     // Note: eosio doesn't provide a way to decompress the key obtained by recover_key
@@ -1568,18 +1568,18 @@ bool __oraclize_randomDS_verifySig(const capi_checksum256 digest, const uint8_t 
 uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std::vector<uint8_t> result, const std::vector<uint8_t> proof, const name payer)
 {
     /*******************************************************************************************
-     *											       *
+     *											                                               *
      *   Step 1: the prefix has to match 'LP\x01' (Ledger Proof version 1)                     * 
-     *											       *
+     *											                                               *
      *******************************************************************************************/
     if (proof[0] != 'L' || proof[1] != 'P' || proof[2] != 1)
-      return 1;
+        return 1;
 
 
     /********************************************************************************************
-     *												*
+     *												                                            *
      *   Step 2: the unique keyhash has to match with the sha256 of (context name = queryId)    *
-     *												*
+     *												                                            *
      ********************************************************************************************/
     const uint8_t ledgerProofLength = 3 + 65 + (proof[3 + 65 + 1] + 2) + 32;
     uint8_t keyhash[32];
@@ -1594,10 +1594,10 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
 
 
     /********************************************************************************************
-     *												*
+     *												                                            *
      *   Step 3: we assume sig1 is valid (it will be verified during step 5)                    *
-     *		 and we verify if 'result' is the prefix of sha256(sig1)                         *
-     *												*
+     *		 and we verify if 'result' is the prefix of sha256(sig1)                            *
+     *												                                            *
      ********************************************************************************************/
     const uint8_t sig1_len = proof[ledgerProofLength + (32 + 8 + 1 + 32) + 1] + 2;
     uint8_t sig1[sig1_len];
@@ -1605,14 +1605,14 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     capi_checksum256 sig1_hash;
     sha256((char *)sig1, sizeof(sig1), &sig1_hash);
     if (!__oraclize_randomDS_matchBytes32Prefix(sig1_hash, result.data(), result.size(), proof[ledgerProofLength + 32 + 8]))
-      return 3;
+        return 3;
 
-   
+
     /********************************************************************************************
-     *												*
-     *   Step 4: commitment match verification, 						*
-     *		 sha256(delay, nbytes, unonce, sessionKeyHash) == commitment in table.          *
-     *												*
+     *												                                            *
+     *   Step 4: commitment match verification, 						                        *
+     *		 sha256(delay, nbytes, unonce, sessionKeyHash) == commitment in table.              *
+     *												                                            *
      ********************************************************************************************/
     const uint8_t slice_offset = 8 + 1 + 32; // delay + nbytes + unonceHashBa
     uint8_t commitmentSlice1[slice_offset];
@@ -1643,32 +1643,32 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     const std::string queryId_str__expected = capi_checksum256_to_string(last_commitments.find(myQueryId_short)->queryid);
     const std::string queryId_str = capi_checksum256_to_string(queryId);
     if (queryId_str != queryId_str__expected)
-      return 4;
+        return 4;
     // Check the commitment with the one in the table
     const std::string lastCommitment_str__expected = capi_checksum256_to_string(last_commitments.find(myQueryId_short)->commitment);
     const std::string lastCommitment_str = capi_checksum256_to_string(lastCommitment);
     if (lastCommitment_str != lastCommitment_str__expected)
-      return 4;
+	    return 4;
 
 
     /********************************************************************************************
-     *												*
+     *                                                                                          *
      *   Step 5: validity verification for sig1 (keyhash and args signed with the sessionKey)   *
-     *												*
+     *                                                                                          *
      ********************************************************************************************/
     uint8_t toSign1[32 + 8 + 1 + 32];
     std::memcpy(toSign1, &proof.data()[ledgerProofLength], sizeof(toSign1));
     capi_checksum256 toSign1_hash;
     sha256((char *)toSign1, sizeof(toSign1), &toSign1_hash);
     if (!__oraclize_randomDS_verifySig(toSign1_hash, sig1, sizeof(sig1), sessionPubKey))
-      return 5;
+	    return 5;
 
 
     /********************************************************************************************
-     *												*
+     *                                                                                          *
      *   Step 6:  verify the attestation signature,                                             *
      *            APPKEY1 must sign the sessionKey from the correct ledger app (CODEHASH)       *
-     *												*
+     *                                                                                          *
      ********************************************************************************************/
     uint8_t sig2[proof[sig2offset + 1] + 2];
     std::memcpy(sig2, &proof.data()[sig2offset], sizeof(sig2));
@@ -1681,13 +1681,13 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     capi_checksum256 toSign2_hash;
     sha256((char *)toSign2, sizeof(toSign2), &toSign2_hash);
     if (!__oraclize_randomDS_verifySig(toSign2_hash, sig2, sizeof(sig2), appkey_pubkey))
-      return 6;
+	    return 6;
 
 
     /********************************************************************************************
-     *												*
+     *                                                                                          *
      *   Step 7: verify the APPKEY1 provenance (must be signed by Ledger)                       *
-     *												*
+     *                                                                                          *
      ********************************************************************************************/
     uint8_t toSign3[1 + 65];
     toSign3[0] = 0xfe;
@@ -1697,9 +1697,9 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     capi_checksum256 toSign3_hash;
     sha256((char *)toSign3, sizeof(toSign3), &toSign3_hash);
     if (!__oraclize_randomDS_verifySig(toSign3_hash, sig3, sizeof(sig3), LEDGERKEY))
-      return 7;
-   
-    
+	    return 7;
+
+
     // Erase the last commitment
     const auto itr2 = last_commitments.find(myQueryId_short);
     last_commitments.erase(itr2);

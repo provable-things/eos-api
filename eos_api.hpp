@@ -1597,7 +1597,7 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
      *                                                                                          *
      *   Step 3: we assume sig1 is valid (it will be verified during step 5)                    *
      *           and we verify if 'result' is the prefix of sha256(sig1)                        *
-     *												                                            *
+     *                                                                                          *
      ********************************************************************************************/
     const uint8_t sig1_len = proof[ledgerProofLength + (32 + 8 + 1 + 32) + 1] + 2;
     uint8_t sig1[sig1_len];

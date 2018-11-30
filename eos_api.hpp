@@ -1360,7 +1360,7 @@ capi_checksum256 __oraclize_getQueryId_local(const capi_checksum256 queryId, con
     std::memcpy(&queryId_expected, 0, sizeof(queryId_expected));
     if (itr != queryids.end())
     {
-	    queryId_expected = itr->qid;
+        queryId_expected = itr->qid;
     }
     return queryId_expected;
 }
@@ -1648,7 +1648,7 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     const std::string lastCommitment_str__expected = capi_checksum256_to_string(last_commitments.find(myQueryId_short)->commitment);
     const std::string lastCommitment_str = capi_checksum256_to_string(lastCommitment);
     if (lastCommitment_str != lastCommitment_str__expected)
-	    return 4;
+        return 4;
 
 
     /********************************************************************************************
@@ -1661,7 +1661,7 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     capi_checksum256 toSign1_hash;
     sha256((char *)toSign1, sizeof(toSign1), &toSign1_hash);
     if (!__oraclize_randomDS_verifySig(toSign1_hash, sig1, sizeof(sig1), sessionPubKey))
-	    return 5;
+        return 5;
 
 
     /********************************************************************************************
@@ -1681,7 +1681,7 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     capi_checksum256 toSign2_hash;
     sha256((char *)toSign2, sizeof(toSign2), &toSign2_hash);
     if (!__oraclize_randomDS_verifySig(toSign2_hash, sig2, sizeof(sig2), appkey_pubkey))
-	    return 6;
+        return 6;
 
 
     /********************************************************************************************
@@ -1697,7 +1697,7 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     capi_checksum256 toSign3_hash;
     sha256((char *)toSign3, sizeof(toSign3), &toSign3_hash);
     if (!__oraclize_randomDS_verifySig(toSign3_hash, sig3, sizeof(sig3), LEDGERKEY))
-	    return 7;
+        return 7;
 
 
     // Erase the last commitment

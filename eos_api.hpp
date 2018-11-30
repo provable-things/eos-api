@@ -1568,18 +1568,18 @@ bool __oraclize_randomDS_verifySig(const capi_checksum256 digest, const uint8_t 
 uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std::vector<uint8_t> result, const std::vector<uint8_t> proof, const name payer)
 {
     /*******************************************************************************************
-     *											                                               *
+     *                                                                                         *
      *   Step 1: the prefix has to match 'LP\x01' (Ledger Proof version 1)                     * 
-     *											                                               *
+     *                                                                                         *
      *******************************************************************************************/
     if (proof[0] != 'L' || proof[1] != 'P' || proof[2] != 1)
         return 1;
 
 
     /********************************************************************************************
-     *												                                            *
+     *                                                                                          *
      *   Step 2: the unique keyhash has to match with the sha256 of (context name = queryId)    *
-     *												                                            *
+     *                                                                                          *
      ********************************************************************************************/
     const uint8_t ledgerProofLength = 3 + 65 + (proof[3 + 65 + 1] + 2) + 32;
     uint8_t keyhash[32];
@@ -1594,9 +1594,9 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
 
 
     /********************************************************************************************
-     *												                                            *
+     *                                                                                          *
      *   Step 3: we assume sig1 is valid (it will be verified during step 5)                    *
-     *		 and we verify if 'result' is the prefix of sha256(sig1)                            *
+     *       and we verify if 'result' is the prefix of sha256(sig1)                            *
      *												                                            *
      ********************************************************************************************/
     const uint8_t sig1_len = proof[ledgerProofLength + (32 + 8 + 1 + 32) + 1] + 2;
@@ -1609,10 +1609,10 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
 
 
     /********************************************************************************************
-     *												                                            *
-     *   Step 4: commitment match verification, 						                        *
-     *		 sha256(delay, nbytes, unonce, sessionKeyHash) == commitment in table.              *
-     *												                                            *
+     *                                                                                          *
+     *   Step 4: commitment match verification,                                                 *
+     *       sha256(delay, nbytes, unonce, sessionKeyHash) == commitment in table.              *
+     *                                                                                          *
      ********************************************************************************************/
     const uint8_t slice_offset = 8 + 1 + 32; // delay + nbytes + unonceHashBa
     uint8_t commitmentSlice1[slice_offset];

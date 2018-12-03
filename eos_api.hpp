@@ -1364,19 +1364,19 @@ bool __oraclize_queryId_match(const capi_checksum256 queryId, const name sender)
         queryId_expected = itr->qid;
     }
     
-	// convert queryId and queryId_expecte to string to compare them
-	std::string queryId_str__expected = checksum256_to_string(queryId_expected);
-	std::string queryId_str = checksum256_to_string(queryId);
+    // convert queryId and queryId_expecte to string to compare them
+    std::string queryId_str__expected = checksum256_to_string(queryId_expected);
+    std::string queryId_str = checksum256_to_string(queryId);
  
-	// compare the queryids 
-	if (queryId_str != queryId_str__expected)
-	{
+    // compare the queryids 
+    if (queryId_str != queryId_str__expected)
+    {
         return false;
-	}
-	else
-	{
-	    return true;
-	}
+    }
+    else
+    {
+        return true;
+    }
 }
 
 void __oraclize_queryId_localEmplace(const capi_checksum256 myQueryId, const name sender)
@@ -1388,9 +1388,9 @@ void __oraclize_queryId_localEmplace(const capi_checksum256 myQueryId, const nam
 	// save the queryId in the local table
     ds_queryid queryids(sender, sender.value);
     queryids.emplace(sender, [&](auto& o) {
-	    o.key = myQueryId_short;
-	    o.qid = myQueryId;
-	    o.active = true;
+        o.key = myQueryId_short;
+        o.qid = myQueryId;
+        o.active = true;
     });
 }
 
@@ -1403,9 +1403,9 @@ capi_checksum256 __oraclize_query(const name user, const unsigned int timestamp,
 {
     capi_checksum256 queryId = __oraclize_getNextQueryId(sender);
     action(permission_level{user, "active"_n},
-	       "oraclizeconn"_n, 
-	       "querystr"_n,
-	       std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, query, prooftype)
+        "oraclizeconn"_n, 
+        "querystr"_n,
+        std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, query, prooftype)
     ).send();
     return queryId;
 }
@@ -1437,9 +1437,9 @@ capi_checksum256 __oraclize_query(const name user, const unsigned int timestamp,
     const auto n = name{user};
     const std::string str = n.to_string();
     action(permission_level{user, "active"_n},
-	       "oraclizeconn"_n, 
-	       "queryba"_n,
-	       std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, __oraclize_cbor_encode(query), prooftype)
+        "oraclizeconn"_n, 
+        "queryba"_n,
+        std::make_tuple(sender, (int8_t)1, (uint32_t)timestamp, queryId, datasource, __oraclize_cbor_encode(query), prooftype)
     ).send();
     return queryId;
 }

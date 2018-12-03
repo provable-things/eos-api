@@ -1347,7 +1347,7 @@ capi_checksum256 __oraclize_getNextQueryId(const name sender)
     return calc_hash;
 }
 
-//check that the queryId being passed matches with the one in the customer local table, return true/false accordingly
+// check that the queryId being passed matches with the one in the customer local table, return true/false accordingly
 bool __oraclize_queryId_match(const capi_checksum256 queryId, const name sender)
 {
     // retreive the short queryId from the full queryId

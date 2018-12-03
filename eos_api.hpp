@@ -1121,7 +1121,7 @@ const uint8_t proofStorage_IPFS = 0x01;
 
 #ifndef CONSTANTS 
 #define CONSTANTS
-const uint8_t CODE_HASH_RANDOMDS[] = {
+const uint8_t CODE_HASH_RANDOMDS[32] = {
     253, 148, 250, 113, 188, 11, 161, 13, 57, 212, 100, 208, 216, 244, 101, 239, 238, 240, 162, 118, 78, 56, 135, 252, 201, 223, 65, 222, 210, 15, 80, 92
 };
 const uint8_t LEDGERKEY[64] = {
@@ -1193,8 +1193,8 @@ typedef eosio::multi_index<name("queryid"), queryid> ds_queryid;
 
 #define oraclize_query(...) __oraclize_query(ORACLIZE_PAYER, __VA_ARGS__, _self)
 #define oraclize_newRandomDSQuery(...) __oraclize_newRandomDSQuery(ORACLIZE_PAYER, __VA_ARGS__, _self)
-#define oraclize_emplaceQueryId_local(...) __oraclize_emplaceQueryId_local(__VA_ARGS__, _self)
-#define oraclize_getQueryId_local(...) __oraclize_getQueryId_local(__VA_ARGS__, _self)
+#define oraclize_queryId_localEmplace(...) __oraclize_queryId_localEmplace(__VA_ARGS__, _self)
+#define oraclize_queryId_match(...) __oraclize_queryId_match(__VA_ARGS__, _self)
 
 
 /**************************************************
@@ -1218,7 +1218,7 @@ std::string vector_to_string(const std::vector<uint8_t> v)
     return v_str;
 }
 
-std::string capi_checksum256_to_string(const capi_checksum256 c)
+std::string checksum256_to_string(const capi_checksum256 c)
 {
     char hexstr[64];
     for (int i = 0; i < 32; i++)
@@ -1282,7 +1282,7 @@ std::vector<uint8_t> uint32_to_vector32_bigendian(uint32_t num)
     return ba;
 }
 
-std::vector<uint8_t> capi_checksum256_to_vector32(const capi_checksum256 c)
+std::vector<uint8_t> checksum256_to_vector32(const capi_checksum256 c)
 {
     std::vector<uint8_t> ba(32);
     for (int i = 0; i < 32; i++)
@@ -1347,32 +1347,47 @@ capi_checksum256 __oraclize_getNextQueryId(const name sender)
     return calc_hash;
 }
 
-capi_checksum256 __oraclize_getQueryId_local(const capi_checksum256 queryId, const name sender)
+//check that the queryId being passed matches with the one in the customer local table, return true/false accordingly
+bool __oraclize_queryId_match(const capi_checksum256 queryId, const name sender)
 {
-    // retreive the short queryId from the passed 
-    uint64_t myQueryId_short;
+    // retreive the short queryId from the full queryId
+    name myQueryId_short;
     std::memcpy(&myQueryId_short, &queryId.hash, sizeof(myQueryId_short));
     
     // access the local table 
     ds_queryid queryids(sender, sender.value); 
-    const auto itr = queryids.find(myQueryId_short);
+    const auto itr = queryids.find(myQueryId_short.value);
     capi_checksum256 queryId_expected;
     std::memcpy(&queryId_expected, 0, sizeof(queryId_expected));
     if (itr != queryids.end())
     {
         queryId_expected = itr->qid;
     }
-    return queryId_expected;
+    
+	// convert queryId and queryId_expecte to string to compare them
+	std::string queryId_str__expected = checksum256_to_string(queryId_expected);
+	std::string queryId_str = checksum256_to_string(queryId);
+ 
+	// compare the queryids 
+	if (queryId_str != queryId_str__expected)
+	{
+        return false;
+	}
+	else
+	{
+	    return true;
+	}
 }
 
-void __oraclize_emplaceQueryId_local(const capi_checksum256 myQueryId, const name sender)
+void __oraclize_queryId_localEmplace(const capi_checksum256 myQueryId, const name sender)
 {
-    // retreive the short query ID to use as an index
-    ds_queryid queryids(sender, sender.value);
+    // retreive the short queryId to use it as an index
     name myQueryId_short;
     std::memcpy(&myQueryId_short, &myQueryId.hash, sizeof(myQueryId_short));
-    // save the query id in the local table
-    queryids.emplace(sender, [&]( auto& o ) {
+    
+	// save the queryId in the local table
+    ds_queryid queryids(sender, sender.value);
+    queryids.emplace(sender, [&](auto& o) {
 	    o.key = myQueryId_short;
 	    o.qid = myQueryId;
 	    o.active = true;
@@ -1470,7 +1485,7 @@ capi_checksum256 __oraclize_newRandomDSQuery(const name user, const uint32_t _de
     // 2. SESSIONKEYHASH - Get the sessionKeyHash from the ledger public key.
     const capi_checksum256 sessionPubkeyHash = __oraclize_randomDS_getSessionPubkeyHash();
     std::vector<uint8_t> sessionPubkeyHashBa(32);
-    sessionPubkeyHashBa = capi_checksum256_to_vector32(sessionPubkeyHash);
+    sessionPubkeyHashBa = checksum256_to_vector32(sessionPubkeyHash);
 
     // 3. UNONCE - Need something block dependent so we decided to perform the hash of those 4 block dependent fields. This value have to be unpredictable from Oraclize
     const size_t tx_size = transaction_size();
@@ -1483,7 +1498,7 @@ capi_checksum256 __oraclize_newRandomDSQuery(const name user, const uint32_t _de
     capi_checksum256 unonceHash; // Container for the unonce hash
     sha256((char *)unonce, sizeof(unonce), &unonceHash);
     std::vector<uint8_t> unonceHashBa(32); // Convert the unonce hash in bytearray
-    unonceHashBa = capi_checksum256_to_vector32(unonceHash);
+    unonceHashBa = checksum256_to_vector32(unonceHash);
 
     // 4. DELAY - Delay converted in a big endian bytearray
     const uint32_t delayLedgerTime = _delay * 10; // Convert from seconds to ledger timer ticks
@@ -1624,10 +1639,10 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     capi_checksum256 sessionPubkeyHash; // Calculate the key hash
     sha256((char *)sessionPubKey, sizeof(sessionPubKey), &sessionPubkeyHash);
     vector<uint8_t> sessionPubkeyHashBa(32); // Convert to bytearray the public key hash 
-    sessionPubkeyHashBa = capi_checksum256_to_vector32(sessionPubkeyHash);
+    sessionPubkeyHashBa = checksum256_to_vector32(sessionPubkeyHash);
     // Recreate the lastCommitment to compare with the table one
     capi_checksum256 lastCommitment;
-    uint8_t tbh[ slice_offset + 32];
+    uint8_t tbh[slice_offset + 32];
     std::memcpy(tbh, &commitmentSlice1, slice_offset);
     std::memcpy(tbh + slice_offset, &sessionPubkeyHashBa[0], 32);
     sha256((char *)tbh, sizeof(tbh), &lastCommitment);
@@ -1640,13 +1655,13 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     capi_checksum256 queryId_expected;
     if (itr == last_commitments.end())
         queryId_expected = itr->queryid;
-    const std::string queryId_str__expected = capi_checksum256_to_string(last_commitments.find(myQueryId_short)->queryid);
-    const std::string queryId_str = capi_checksum256_to_string(queryId);
+    const std::string queryId_str__expected = checksum256_to_string(last_commitments.find(myQueryId_short)->queryid);
+    const std::string queryId_str = checksum256_to_string(queryId);
     if (queryId_str != queryId_str__expected)
         return 4;
     // Check the commitment with the one in the table
-    const std::string lastCommitment_str__expected = capi_checksum256_to_string(last_commitments.find(myQueryId_short)->commitment);
-    const std::string lastCommitment_str = capi_checksum256_to_string(lastCommitment);
+    const std::string lastCommitment_str__expected = checksum256_to_string(last_commitments.find(myQueryId_short)->commitment);
+    const std::string lastCommitment_str = checksum256_to_string(lastCommitment);
     if (lastCommitment_str != lastCommitment_str__expected)
         return 4;
 

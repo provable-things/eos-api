@@ -1311,7 +1311,8 @@ capi_checksum256 __oraclize_randomDS_getSessionPubkeyHash()
 {
     ds_spubkey spubkeys("oraclizeconn"_n, "oraclizeconn"_n.value);
     // just one value in the table with the key=1
-    const auto itr = spubkeys.find(1);
+    name index = "1"_n;
+    const auto itr = spubkeys.find(index.value);
     capi_checksum256 sessionPubkeyHash;
     if (itr != spubkeys.end())
     {
@@ -1720,3 +1721,4 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     last_commitments.erase(itr2);
     return 0;
 }
+

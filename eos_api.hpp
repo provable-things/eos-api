@@ -1203,11 +1203,10 @@ typedef eosio::multi_index<name("queryid"), queryid> ds_queryid;
  **************************************************/
 uint64_t oraclize_cbAddress()
 {
-    // go to the connector table which identify the sender 
+    // Go to the connector table which identify the sender 
     ds_cbaddr cb_addrs("oraclizeconn"_n, "oraclizeconn"_n.value);
-    // point to the first element of the table: 1. if table is empty 
+    // Point to the first element of the table
     auto itr = cb_addrs.begin();
-
     uint64_t cbaddr = (itr != cb_addrs.end()) ? itr->sender.value : 0;
     return cbaddr;
 }
@@ -1310,7 +1309,7 @@ vector<uint8_t> __oraclize_cbor_encode(const vector<vector<uint8_t>> params)
 capi_checksum256 __oraclize_randomDS_getSessionPubkeyHash()
 {
     ds_spubkey spubkeys("oraclizeconn"_n, "oraclizeconn"_n.value);
-    // just one value in the table with the key=1
+    // Just one value in the table with the key = 1
     name index = "1"_n;
     const auto itr = spubkeys.find(index.value);
     capi_checksum256 sessionPubkeyHash;
@@ -1338,7 +1337,7 @@ capi_checksum256 __oraclize_getNextQueryId(const name sender)
     // Get values to generate the queryId
     const uint32_t nonce = __oraclize_getSenderNonce(sender);
     const size_t tx_size = transaction_size();
-    // calculate the hash of the previous values
+    // Calculate the hash of the previous values
     uint8_t tbh[sizeof(sender) + sizeof(nonce) + sizeof(tx_size)];
     std::memcpy(tbh, &sender, sizeof(sender));
     std::memcpy(tbh + sizeof(sender), &nonce, sizeof(nonce));
@@ -1351,11 +1350,11 @@ capi_checksum256 __oraclize_getNextQueryId(const name sender)
 // check that the queryId being passed matches with the one in the customer local table, return true/false accordingly
 bool __oraclize_queryId_match(const capi_checksum256 queryId, const name sender)
 {
-    // retreive the short queryId from the full queryId
+    // Retreive the short queryId from the full queryId
     name myQueryId_short;
     std::memcpy(&myQueryId_short, &queryId.hash, sizeof(myQueryId_short));
     
-    // access the local table 
+    // Access the local table 
     ds_queryid queryids(sender, sender.value); 
     const auto itr = queryids.find(myQueryId_short.value);
     capi_checksum256 queryId_expected;
@@ -1365,11 +1364,11 @@ bool __oraclize_queryId_match(const capi_checksum256 queryId, const name sender)
         queryId_expected = itr->qid;
     }
     
-    // convert queryId and queryId_expecte to string to compare them
+    // Convert queryId and queryId_expecte to string, to compare them
     std::string queryId_str__expected = checksum256_to_string(queryId_expected);
     std::string queryId_str = checksum256_to_string(queryId);
  
-    // compare the queryids 
+    // Compare the queryids 
     if (queryId_str != queryId_str__expected)
     {
         return false;
@@ -1382,11 +1381,11 @@ bool __oraclize_queryId_match(const capi_checksum256 queryId, const name sender)
 
 void __oraclize_queryId_localEmplace(const capi_checksum256 myQueryId, const name sender)
 {
-    // retreive the short queryId to use it as an index
+    // Retreive the short queryId to use it as an index
     name myQueryId_short;
     std::memcpy(&myQueryId_short, &myQueryId.hash, sizeof(myQueryId_short));
     
-	// save the queryId in the local table
+    // Save the queryId in the local table
     ds_queryid queryids(sender, sender.value);
     queryids.emplace(sender, [&](auto& o) {
         o.key = myQueryId_short;
@@ -1470,7 +1469,7 @@ void __oraclize_randomDS_setCommitment(const capi_checksum256 queryId, const cap
     name myQueryId_short; // Calculate the short queryId, to use it as a key of the table
     std::memcpy(&myQueryId_short, &queryId.hash[0], sizeof(myQueryId_short));
     ds_scommitment last_commitments(payer, payer.value); // Set the commitment in the eos table of the caller
-    last_commitments.emplace(payer, [&](auto &o) { //key must be a uint64_t so a short query Id is used
+    last_commitments.emplace(payer, [&](auto &o) { // The key must be a uint64_t so a short query Id is used
         o.shortqueryid = myQueryId_short;
         o.queryid = queryId;
         o.commitment = commitment;
@@ -1652,7 +1651,7 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     name myQueryId_short;
     std::memcpy(&myQueryId_short, &queryId.hash[0], sizeof(myQueryId_short));
     // Check if the key value exists
-	const auto itr = last_commitments.find(myQueryId_short.value);
+    const auto itr = last_commitments.find(myQueryId_short.value);
     if (itr == last_commitments.end())
         return 4;
     // Check the query id with the one in the table

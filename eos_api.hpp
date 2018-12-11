@@ -1649,19 +1649,19 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     sha256((char *)tbh, sizeof(tbh), &lastCommitment);
     // Retrieve the table commitment
     ds_scommitment last_commitments(payer, payer.value);
-    uint64_t myQueryId_short;
+    name myQueryId_short;
     std::memcpy(&myQueryId_short, &queryId.hash[0], sizeof(myQueryId_short));
-    // Check the query id with the one in the table
-    const auto itr = last_commitments.find(myQueryId_short);
-    capi_checksum256 queryId_expected;
+    // Check if the key value exists
+	const auto itr = last_commitments.find(myQueryId_short.value);
     if (itr == last_commitments.end())
-        queryId_expected = itr->queryid;
-    const std::string queryId_str__expected = checksum256_to_string(last_commitments.find(myQueryId_short)->queryid);
+        return 4;
+    // Check the query id with the one in the table
+    const std::string queryId_str__expected = checksum256_to_string(itr->queryid);
     const std::string queryId_str = checksum256_to_string(queryId);
     if (queryId_str != queryId_str__expected)
         return 4;
     // Check the commitment with the one in the table
-    const std::string lastCommitment_str__expected = checksum256_to_string(last_commitments.find(myQueryId_short)->commitment);
+    const std::string lastCommitment_str__expected = checksum256_to_string(itr->commitment);
     const std::string lastCommitment_str = checksum256_to_string(lastCommitment);
     if (lastCommitment_str != lastCommitment_str__expected)
         return 4;
@@ -1717,7 +1717,7 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
 
 
     // Erase the last commitment
-    const auto itr2 = last_commitments.find(myQueryId_short);
+    const auto itr2 = last_commitments.find(myQueryId_short.value);
     last_commitments.erase(itr2);
     return 0;
 }

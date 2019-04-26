@@ -22,7 +22,7 @@ THE SOFTWARE.
 #define ORACLIZEAPI_H
 
 #if __cplusplus < 201103
-#warning "To enable all features you must compile with -std=c++11"
+  #warning "To enable all features you must compile with -std=c++11"
 #endif
 
 #include <map>
@@ -30,7 +30,7 @@ THE SOFTWARE.
 #include <vector>
 
 #if __cplusplus >= 201103
-#include <initializer_list>
+  #include <initializer_list>
 #endif
 
 #include <stdio.h>
@@ -44,6 +44,25 @@ THE SOFTWARE.
 #include <eosiolib/print.hpp>
 #include <eosiolib/transaction.hpp>
 #include <eosiolib/crypto.h>
+
+/**************************************************
+ *                      MACRO                     *
+ *                   Definitions                  *
+ **************************************************/
+#ifndef ORACLIZE_NETWORK_NAME
+  #warning ORACLIZE_NETWORK_NAME is not set, setting it to "eosio_unknown".. [possible values are "eosio_mainnet"/"eosio_testnet_jungle"/"eosio_unknown"]
+  #define ORACLIZE_NETWORK_NAME "eosio_unknown"
+#endif
+
+#ifndef ORACLIZE_PAYER
+#define ORACLIZE_PAYER _self
+#endif // ORACLIZE_PAYER
+
+#define oraclize_query(...) __oraclize_query(ORACLIZE_PAYER, __VA_ARGS__, _self)
+#define oraclize_newRandomDSQuery(...) __oraclize_newRandomDSQuery(ORACLIZE_PAYER, __VA_ARGS__, _self)
+#define oraclize_queryId_localEmplace(...) __oraclize_queryId_localEmplace(__VA_ARGS__, _self)
+#define oraclize_queryId_match(...) __oraclize_queryId_match(__VA_ARGS__, _self)
+
 
 using namespace eosio;
 using namespace std;
@@ -1183,20 +1202,6 @@ typedef eosio::multi_index<name("queryid"), queryid> ds_queryid;
 
 
 /**************************************************
- *                      MACRO                     *
- *                   Definitions                  *
- **************************************************/
-#ifndef ORACLIZE_PAYER
-#define ORACLIZE_PAYER _self
-#endif // ORACLIZE_PAYER
-
-#define oraclize_query(...) __oraclize_query(ORACLIZE_PAYER, __VA_ARGS__, _self)
-#define oraclize_newRandomDSQuery(...) __oraclize_newRandomDSQuery(ORACLIZE_PAYER, __VA_ARGS__, _self)
-#define oraclize_queryId_localEmplace(...) __oraclize_queryId_localEmplace(__VA_ARGS__, _self)
-#define oraclize_queryId_match(...) __oraclize_queryId_match(__VA_ARGS__, _self)
-
-
-/**************************************************
  *                PUBLIC FUNCTIONS                *
  *                 Implementation                 *
  **************************************************/
@@ -1605,14 +1610,20 @@ uint8_t oraclize_randomDS_proofVerify(const capi_checksum256 queryId, const std:
     const uint8_t ledgerProofLength = 3 + 65 + (proof[3 + 65 + 1] + 2) + 32;
     uint8_t keyhash[32];
     std::memcpy(keyhash, &proof.data()[ledgerProofLength], 32);
-    const char context_name[] = {'e','o','s','_','t','e','s','t','n','e','t','_','j','u','n','g','l','e'};
+    capi_checksum256 keyhash_sha;
+    sha256((char *)keyhash, sizeof(keyhash), &keyhash_sha);
     capi_checksum256 calc_hash;
+    std::string context_name_str = ORACLIZE_NETWORK_NAME;
+    char context_name[context_name_str.size()]; 
+    context_name_str.copy(context_name, context_name_str.size());
     uint8_t tbh2[sizeof(context_name) + sizeof(queryId.hash)];
     std::memcpy(tbh2, &context_name, sizeof(context_name));
     std::memcpy(tbh2 + sizeof(context_name), &queryId.hash, sizeof(queryId.hash));
     sha256((char *)tbh2, sizeof(tbh2), &calc_hash);
-    std::memcmp(calc_hash.hash, keyhash, sizeof(keyhash));
-
+    capi_checksum256 calc_hash_2;
+    sha256((char *)calc_hash.hash, sizeof(calc_hash.hash), &calc_hash_2);
+    if(checksum256_to_string(keyhash_sha) != checksum256_to_string(calc_hash_2))
+        return 2;
 
     /********************************************************************************************
      *                                                                                          *

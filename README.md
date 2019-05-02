@@ -24,6 +24,18 @@ To learn more about the Oraclize technology, please refer to our __[documentatio
 
 &nbsp;
 
+### CDT Compatiiblity
+
+The `eos_api.hpp` library in this repo is compatible with the EOSIO CDT 1.4.0.
+
+For the Oraclize EOS API compatible with the CDT 1.6.1, just go to the branch [eosio.cdt-1.6.1](https://github.com/oraclize/eos-api/tree/eosio.cdt-1.6.1).
+
+&nbsp;
+
+***
+
+&nbsp;
+
 ### :computer: See It In Action!
 
 For working examples of how to integrate the __Oraclize__ EOS API into your own smart-contracts, head on over to the __[Oraclize EOS Examples](https://github.com/oraclize/eos-examples)__ repository. Here you'll find various examples that use __Oraclize__ to feed smart-contracts with data from a variety of external sources.

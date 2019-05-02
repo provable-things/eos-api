@@ -1,0 +1,31 @@
+{
+  "name": "eos-api",
+  "version": "1.4.0",
+  "description": "Provable EOS API",
+  "main": "",
+  "scripts": {
+    "release": "standard-version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oraclize/eos-api.git"
+  },
+  "keywords": [
+    "provable",
+    "oraclize",
+    "eos",
+    "api",
+    "oracle",
+    "1.4.0",
+    "cdt-1.4.0"
+  ],
+  "author": "riccardopersiani",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/oraclize/eos-api/issues"
+  },
+  "homepage": "https://github.com/oraclize/eos-api#readme",
+  "devDependencies": {
+    "standard-version": "^5.0.2"
+  }
+}

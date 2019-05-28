@@ -26,9 +26,9 @@ To learn more about the Oraclize technology, please refer to our __[documentatio
 
 ### CDT Compatiiblity
 
-The `eos_api.hpp` library in this repo is compatible with the EOSIO CDT 1.4.0.
+The `eos_api.hpp` library in this repo is compatible with the EOSIO CDT 1.6.1.
 
-For the Oraclize EOS API compatible with the CDT 1.6.1, just go to the branch [eosio.cdt-1.6.1](https://github.com/oraclize/eos-api/tree/eosio.cdt-1.6.1).
+For the Oraclize EOS API compatible with the CDT 1.4.0, just go to the branch [eosio.cdt-1.4.0](https://github.com/oraclize/eos-api/tree/eosio.cdt-1.4.0).
 
 &nbsp;
 

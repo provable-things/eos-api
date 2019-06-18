@@ -24,6 +24,16 @@ To learn more about the Oraclize technology, please refer to our __[documentatio
 
 &nbsp;
 
+### Network Availability
+
+The `eos_api.hpp` library in currently available on EOS Mainnet, EOS Jungle Testnet and EOS Kylin Testnet.
+
+&nbsp;
+
+***
+
+&nbsp;
+
 ### CDT Compatiiblity
 
 The `eos_api.hpp` library in this repo is compatible with the EOSIO CDT 1.6.1.

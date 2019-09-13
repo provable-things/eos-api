@@ -38,7 +38,7 @@ The `eos_api.hpp` library in currently available on EOS Mainnet, EOS Jungle Test
 
 The `eos_api.hpp` library in this repo is compatible with the EOSIO CDT 1.6.1.
 
-For the Provable EOS API compatible with the CDT 1.4.0, just go to the branch [eosio.cdt-1.4.0](https://github.com/provable-things/eos-api/tree/eosio.cdt-1.4.0).
+The Provable EOS API compatible with the CDT 1.4.0 is no longer supported.
 
 &nbsp;
 

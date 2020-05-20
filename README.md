@@ -26,7 +26,15 @@ To learn more about the Provable technology, please refer to our __[documentatio
 
 ### Network Availability
 
-The `eos_api.hpp` library in currently available on EOS Mainnet, EOS Jungle Testnet and EOS Kylin Testnet.
+The `eos_api.hpp` library in currently available on:
+
+* EOS Mainnet
+
+* EOS Jungle 2 Testnet - deprecated
+
+* EOS Jungle 3 Testnet
+
+* EOS Kylin Testnet
 
 &nbsp;
 

@@ -1,4 +1,4 @@
-## Provable EOS API [![Join the chat at https://gitter.im/oraclize/eos-api](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/oraclize/eos-api?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Docs@Oraclize.it](https://camo.githubusercontent.com/5e89710c6ae9ce0da822eec138ee1a2f08b34453/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f646f63732d536c6174652d627269676874677265656e2e737667)](http://docs.oraclize.it) [![HitCount](http://hits.dwyl.io/provable-things/eos-api.svg)](http://hits.dwyl.io/provable-things/eos-api) [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
+## Provable EOS API [![Join the chat at https://gitter.im/oraclize/eos-api](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/provable-things/eos-api?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Docs@Oraclize.it](https://camo.githubusercontent.com/5e89710c6ae9ce0da822eec138ee1a2f08b34453/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f646f63732d536c6174652d627269676874677265656e2e737667)](http://docs.provable.xyz) [![HitCount](http://hits.dwyl.io/provable-things/eos-api.svg)](http://hits.dwyl.io/provable-things/eos-api) [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
 
 &nbsp;
 
@@ -28,13 +28,11 @@ To learn more about the Provable technology, please refer to our __[documentatio
 
 The `eos_api.hpp` library in currently available on:
 
-* EOS Mainnet
+__❍__ EOS Mainnet
 
-* EOS Jungle 2 Testnet - deprecated
+__❍__ EOS Jungle 3 Testnet
 
-* EOS Jungle 3 Testnet
-
-* EOS Kylin Testnet
+__❍__ EOS Kylin Testnet
 
 &nbsp;
 
@@ -44,9 +42,9 @@ The `eos_api.hpp` library in currently available on:
 
 ### CDT Compatiiblity
 
-The `eos_api.hpp` library in this repo is compatible with the EOSIO CDT 1.6.1.
+The `eos_api.hpp` library in the master branch is compatible with the EOSIO CDT 1.7.
 
-The Provable EOS API compatible with the CDT 1.4.0 is no longer supported.
+The Provable API compatible with the CDT 1.6 and 1.4 can be found in corresponding branches.
 
 &nbsp;
 
@@ -68,9 +66,9 @@ For working examples of how to integrate the __Provable__ EOS API into your own 
 
 If you want to ask us something, or tell us something, there's loads of ways to get in touch:
 
-__❍__ We have a __[Twitter](https://twitter.com/oraclizeit)__
+__❍__ We have a __[Twitter](https://twitter.com/provablethings)__
 
-__❍__ And a __[Gitter](https://gitter.im/oraclize/eos-api)__
+__❍__ And a __[Gitter](https://gitter.im/provable-things/eos-api)__
 
 __❍__ Or a __[Website](https://provable.xyz)__
 

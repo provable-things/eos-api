@@ -1,4 +1,4 @@
-## Provable EOS API [![Join the chat at https://gitter.im/oraclize/eos-api](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/provable-things/eos-api?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Docs@Oraclize.it](https://camo.githubusercontent.com/5e89710c6ae9ce0da822eec138ee1a2f08b34453/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f646f63732d536c6174652d627269676874677265656e2e737667)](http://docs.provable.xyz) [![HitCount](http://hits.dwyl.io/provable-things/eos-api.svg)](http://hits.dwyl.io/provable-things/eos-api) [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
+## Provable EOS API [![Join the chat at https://gitter.im/provable-things/eos-api](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/provable-things/eos-api?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Docs@Oraclize.it](https://camo.githubusercontent.com/5e89710c6ae9ce0da822eec138ee1a2f08b34453/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f646f63732d536c6174652d627269676874677265656e2e737667)](http://docs.provable.xyz) [![HitCount](http://hits.dwyl.io/provable-things/eos-api.svg)](http://hits.dwyl.io/provable-things/eos-api) [![MIT Licence](https://badges.frapsoft.com/os/mit/mit.svg?v=103)](https://opensource.org/licenses/mit-license.php)
 
 &nbsp;
 
@@ -6,17 +6,17 @@ Thanks to this __EOS API__, enriching your smart-contracts with external data us
 
 In C++ it is as simple as including the __`eos_api.hpp`__ library that you'll find in this repository.
 
-This will provide your contract with functions like __`oraclize_query(...)`__, which make it trivial for you to leverage our oracle technology straight away.
+This will provide your contract with functions like __`provable_query(...)`__, which make it trivial for you to leverage our oracle technology straight away.
 
 Simply import __Provable__ into your contract like so:
 
 ```c++
 
-#include "oraclize/eos_api.hpp"
+#include "provable/eos_api.hpp"
 
 ```
 
-To learn more about the Provable technology, please refer to our __[documentation here](https://docs.oraclize.it)__.
+To learn more about the Provable technology, please refer to our __[documentation here](https://docs.provable.xyz)__.
 
 &nbsp;
 
